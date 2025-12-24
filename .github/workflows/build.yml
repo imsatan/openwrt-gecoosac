@@ -1,0 +1,42 @@
+name: Build OpenWrt Plugin
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu‑latest
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v3
+
+    - name: Download OpenWrt SDK
+      run: |
+        wget https://downloads.openwrt.org/releases/23.05.4/targets/x86/64/openwrt‑sdk‑23.05.4‑x86‑64_gcc‑12.3.0_musl.Linux-x86_64.tar.xz
+        tar xJf openwrt‑sdk*.tar.xz
+
+    - name: Copy plugin
+      run: |
+        mkdir -p openwrt‑sdk*/package/openwrt‑gecoosac
+        cp -r package/openwrt‑gecoosac openwrt‑sdk*/package/openwrt‑gecoosac
+
+    - name: Update feeds
+      run: |
+        cd openwrt‑sdk*
+        ./scripts/feeds update -a
+        ./scripts/feeds install -a
+
+    - name: Compile plugin
+      run: |
+        cd openwrt‑sdk*
+        make package/openwrt‑gecoosac/compile V=s
+
+    - name: Upload artifacts
+      uses: actions/upload‑artifact@v3
+      with:
+        name: gecoosac‑ipk
+        path: |
+          openwrt‑sdk*/bin/packages/**/openwrt‑gecoosac*.ipk
